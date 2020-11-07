@@ -6,7 +6,9 @@ COPY package*.json ./
 
 RUN npm install
 
-ENV MYSQL_HOST=13.235.8.187\
+ENV PORT=8080\
+    MYSQL_PORT=3306\
+    MYSQL_HOST=13.235.8.187\
     MYSQL_USER=root\
     MYSQL_DATABASE=db_perfex \
     MYSQL_PASSWORD=password

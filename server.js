@@ -22,7 +22,7 @@ var verifyToken = require('./verifyToken');
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'localhost',
   user: process.env.MYSQL_USER || 'root',
-  port:3306,
+  port:process.env.MYSQL_PORT || 3306,
   password: process.env.MYSQL_PASSWORD || 'password',
   database: process.env.MYSQL_DATABASE || 'db_perfex',
   waitForConnections: true,
@@ -83,7 +83,7 @@ app.post('/api/user',(req, res) => {
 });
 
 
-app.post('/api/createobservation',(req, res) => {
+app.post('/api/createobservation',verifyToken,(req, res) => {
   try{
     let data,sql;
     if(req.body.observation_id)
@@ -104,20 +104,26 @@ app.post('/api/createobservation',(req, res) => {
   }
 });
 
-app.post('/api/updateobservation',(req, res) => {
+app.post('/api/deletefile',verifyToken,(req, res) => {
   try{
-    let data = [{area_id: req.body.area_id, section_id: req.body.section_id,observation_date:req.body.observation_date,employee_name:req.body.employee_name,observation:req.body.observation,remarks:req.body.remarks,user_id:req.body.user_id}, req.body.observation_id];
-    let sql = "UPDATE observation_tbl SET ? WHERE observation_id = ?";
+    let data,sql;
+    if(req.body.observation_file_id)
+    {
+      data = req.body.observation_file_id;
+      sql = "DELETE FROM  observation_file_tbl WHERE observation_file_id = ?";
+    }
      pool.query(sql, data,(err, results) => {
       res.send(JSON.stringify({"status": results?200:400, "error": null, "response": results?results.insertId:results}));
     });
+    
   }
   catch(e){
     res.status(500).send(e);
   }
 });
 
-app.post('/api/fileupload', async (req, res) => {
+
+app.post('/api/fileupload', verifyToken,async (req, res) => {
   try {
 
       if(!req.files) {
@@ -133,17 +139,17 @@ app.post('/api/fileupload', async (req, res) => {
 
          avatar.mv(file_url);
          let data,sql;
-         if(req.body.observation_file_tbl)
+         if(req.body.observation_file_id)
          {
-           data = [{observation_id: req.body.observation_id, photo_url: file_name,description:req.body.description}, req.body.observation_file_tbl];
-           sql = "UPDATE observation_file_tbl SET ? WHERE observation_file_tbl = ?";
-          
+           data = [{observation_id: req.body.observation_id, photo_url: file_name,description:req.body.description}, req.body.observation_file_id];
+           sql = "UPDATE observation_file_tbl SET ? WHERE observation_file_id = ?";
          }
          else{
            data = {observation_id: req.body.observation_id, photo_url: file_name,description:req.body.description};
            sql = "INSERT INTO observation_file_tbl SET ?";
          }
           pool.query(sql, data,(err, results) => {
+            console.log(err)
             res.send(JSON.stringify({"status": results?200:400, "error": null, "response": results}));
           });
          
@@ -152,6 +158,6 @@ app.post('/api/fileupload', async (req, res) => {
       res.status(500).send(err);
   }
 });
-app.listen(8080,() =>{
-  console.log('Server started on port 3080...');
+app.listen(process.env.PORT,() =>{
+  console.log(`Server started on port ${process.env.PORT}...`);
 });
