@@ -127,10 +127,20 @@ app.post('/api/fileupload', verifyToken,async (req, res) => {
   try {
 
       if(!req.files) {
+        if(req.body.observation_file_id)
+         {
+           data = [{description:req.body.description}, req.body.observation_file_id];
+           sql = "UPDATE observation_file_tbl SET ? WHERE observation_file_id = ?";
+           pool.query(sql, data,(err, results) => {
+            res.send(JSON.stringify({"status": results?200:400, "error": null, "response": results}));
+          });
+         }
+         else{
           res.send(JSON.stringify({
               status: false,
               message: 'No file uploaded'
           }));
+        }
       } else {
           let avatar = req.files.file;
           var extension = path.extname(avatar.name);
@@ -149,7 +159,6 @@ app.post('/api/fileupload', verifyToken,async (req, res) => {
            sql = "INSERT INTO observation_file_tbl SET ?";
          }
           pool.query(sql, data,(err, results) => {
-            console.log(err)
             res.send(JSON.stringify({"status": results?200:400, "error": null, "response": results}));
           });
          
